@@ -1,0 +1,184 @@
+
+type StateBoundary = {
+    states:{
+        [key: string]: any;
+    },
+    events:{
+        [key: string]: any;
+    }
+}
+
+class LittleEvent {
+    name:string;
+    data:any
+}
+
+interface LittleState {
+    name:string;
+    data:any; 
+}
+
+interface EventToTargetStateDef<SM extends StateBoundary['states'], EM extends StateBoundary['events'], CC> {
+    when<E extends keyof EM, N extends keyof SM>(eventName:E, nextStateName:N, fun:(currentStateContext:CC, eventParams:EM[E]) => SM[N]) : EventToTargetStateDef<SM, EM, CC>
+}
+
+export class TypedState<SM extends StateBoundary['states'], S extends keyof SM> {
+    constructor(public readonly name:S, public readonly data:SM[S]) {}
+}
+
+export class LittleFsm<SB extends StateBoundary> {
+
+    private currentState: LittleState|null = null;
+    private stateToEventFunctionMap = new Map<string, Map<string, [string, (stateData:any, eventData:any) => any]>>();
+    private onStateEnterSideEffectMap = new Map<string, (state:LittleState) => void>();
+
+    constructor() {}
+
+    init<S extends keyof SB['states']>(currStateName:S, stateData:SB['states'][S]) {
+        this.currentState = {
+            name: currStateName as string,
+            data: stateData
+        }
+    }
+
+    given<S extends keyof SB['states'], CC extends SB['states'][S]>
+        (currStateName:S):EventToTargetStateDef<SB['states'], SB['events'], CC> {     
+        let stateToEventFunctionMap = this.stateToEventFunctionMap;  
+        
+        let objWithWhen:EventToTargetStateDef<SB['states'], SB['events'], CC> = {
+            when<E extends keyof SB['events'], N extends keyof SB['states']>(eventName:E, nextStateName:N, fun:(currentContext:CC, eventParams:SB['events'][E]) => SB['states'][N]) {
+                if(!stateToEventFunctionMap.has(currStateName as string)) {
+                    let map = new Map<string, [string, (event) => any]>();
+                    stateToEventFunctionMap.set(currStateName as string, map)
+                }
+        
+                let eventToFunctionMap:Map<string, [string, (state:LittleState, event:LittleEvent) => LittleState]> = 
+                    stateToEventFunctionMap.get(currStateName as string)!;
+                eventToFunctionMap.set(eventName as string, [nextStateName as string, fun]); 
+
+                return objWithWhen;
+            }
+        }
+        return objWithWhen;
+    }
+
+    rule<S extends keyof SB['states'], E extends keyof SB['events'], N extends keyof SB['states']>
+        (currStateName:S, eventName:E, nextStateName:N, fun:(stateData:SB['states'][S], eventData:SB['events'][E]) => SB['states'][N]) {        
+        
+        if(!this.stateToEventFunctionMap.has(currStateName as string)) {
+            let map = new Map<string, [string, (event) => any]>();
+            this.stateToEventFunctionMap.set(currStateName as string, map)
+        }
+
+        //this.stateToEventFunctionMap.get(currStateName as string)?.set(eventName as string, [nextStateName as string, fun]);
+
+        let eventToFunctionMap:Map<string, [string, (state:LittleState, event:LittleEvent) => LittleState]> = 
+            this.stateToEventFunctionMap.get(currStateName as string)!;
+        eventToFunctionMap.set(eventName as string, [nextStateName as string, fun]);        
+    }
+
+    getCurrentState<S extends keyof SB['states']>():TypedState<SB['states'], S> {
+        if(this.currentState == null) {
+            throw new Error("Initial state is not defined.");
+        } 
+        return new TypedState<SB['states'], S>(this.currentState.name as S, this.currentState.data);
+    }
+
+    getCurrentStateData<S extends keyof SB['states']>(name:S):SB['states'][S] {
+        if(this.currentState == null) {
+            throw new Error("Initial state is not defined.");
+        } 
+
+        return this.currentState.data as SB['states'][S];
+    }
+
+    setStateEnterEffect<SN extends keyof SB['states']>(stateName:SN, onEnterEffect:(stateData:SB['states'][SN]) => void) {
+        this.onStateEnterSideEffectMap.set(stateName as string, onEnterEffect);
+    }
+
+    private calculateNextState(stateName:string, event:LittleEvent): LittleState | undefined {
+        if(this.currentState == null) {
+            console.error("Initial state is not defined.");
+            return undefined;
+        } 
+
+        let eventToFunctionMap = this.stateToEventFunctionMap.get(stateName);
+        if(eventToFunctionMap) {
+            let tuple:[string, ((state:LittleState, event:LittleEvent) => LittleState)] | undefined = eventToFunctionMap.get(event.name);
+            if(tuple != undefined) {  
+                let nextStateName = tuple[0];
+                let nextStateDataFun = tuple[1];              
+                let nextStateData = nextStateDataFun(this.currentState.data, event.data);
+                return {
+                    name: nextStateName,
+                    data: nextStateData
+                }
+            } else {
+                console.error("No state transition function exists for state=%s event=%s", stateName, event.name);
+            }            
+        } else {
+            console.error("No state transition exists for state=", stateName);
+        }
+        return undefined;
+    }
+
+    getEventStateRules(): {currState:string, event:string, nextState:string}[] {
+        let stateEvents:{currState:string, event:string, nextState:string}[] = [];
+        this.stateToEventFunctionMap.forEach((value: Map<string, [string, (state:LittleState, event:LittleEvent) => LittleState]>, keyCurrentState: string) => { 
+            value.forEach ((value: [string, (state:LittleState, event:LittleEvent) => LittleState], keyEvent: string) => {
+                let eventName= keyEvent.replace("event:","");
+                let nextStateName = value[0];
+                let stateEventRule = {currState:keyCurrentState, event:eventName, nextState:nextStateName};
+                stateEvents.push(stateEventRule);
+            })
+        })
+        return stateEvents;
+    }
+
+    private logStateTransition(currState:LittleState, event:LittleEvent, newState?:LittleState) {
+        console.table({
+            "current state": currState.name,
+            "event": event.name,
+            "new state": newState?.name
+        });
+    }
+
+    private executeOnEnterEffect(state:LittleState) {
+        let onStateEnterEffectFun = this.onStateEnterSideEffectMap.get(state.name);
+        if(onStateEnterEffectFun) {
+            console.debug("Executing OnEnterEffect for state=%s ...", state.name);
+            onStateEnterEffectFun(state.data);
+            console.debug("Executed OnEnterEffect for state=%s", state.name);
+        }
+    }
+
+    processEvent<E extends keyof SB['events']>(eventName:E, eventData:SB['events'][E]) {
+        if(this.currentState == null) {
+            console.error("Initial state is not defined.");
+            return;
+        } 
+
+        let event:LittleEvent = {
+            name: eventName as string,
+            data: eventData
+        };
+
+        console.debug("Processing dispatch event=%s currState=%s", event.name, this.currentState.name);        
+        let newState = this.calculateNextState(this.currentState.name, event);        
+        if(newState) {   
+            this.logStateTransition(this.currentState, event, newState);    
+            this.currentState = newState;            
+            this.executeOnEnterEffect(this.currentState);
+        } else {
+            console.warn("New state cannot be calculated.");
+            this.logStateTransition(this.currentState, event);    
+        }        
+    }
+
+    start() {
+        if(this.currentState == null) {
+            throw new Error("Initial state is not defined.");
+        } 
+        this.executeOnEnterEffect(this.currentState);
+    }
+}

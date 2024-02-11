@@ -1,0 +1,24 @@
+{
+	"compileOnSave": false,
+	"compilerOptions": {
+		"target": "es5",
+		"module": "commonjs",
+		"lib": [
+			"es2017",
+			"dom"
+		],
+		"noImplicitAny": false,
+		"noImplicitReturns": true,
+		"suppressImplicitAnyIndexErrors": true,
+		"preserveConstEnums": true,
+		"removeComments": false,
+		"noLib": false,
+		"declaration": false,
+		"sourceMap": true,
+		"strictNullChecks": true,
+		"noImplicitThis": true,
+		"experimentalDecorators": true,
+		"jsx": "react",
+		"jsxFactory": "m"
+	}
+}

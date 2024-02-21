@@ -186,7 +186,7 @@ export class SubFsmBuilder<SM extends StateManifest> {
     
     constructor() {}
 
-    entrySubState<SUB extends inArray<SM['substates']>, CC extends SM['context']>(initialSubstate:SUB, condition?:ConditionDescriptor<CC>) {
+    entrySubstate<SUB extends inArray<SM['substates']>, CC extends SM['context']>(initialSubstate:SUB, condition?:ConditionDescriptor<CC>) {
         this.initialSubStateConditionDescriptors.push({
             name: initialSubstate as string,
             condition: condition
@@ -194,17 +194,17 @@ export class SubFsmBuilder<SM extends StateManifest> {
         return this;
     };
 
-    completionSubState<SUB extends inArray<SM['substates']> & string>(substate:SUB) {
+    completionSubstate<SUB extends inArray<SM['substates']> & string>(substate:SUB) {
         this.completionSubStates.push(substate);
         return this;
     }
 
-    terminationSubState<SUB extends inArray<SM['substates']> & string>(substate:SUB) {
+    terminationSubstate<SUB extends inArray<SM['substates']> & string>(substate:SUB) {
         this.terminationSubStates.push(substate);
         return this;
     }
 
-    subState<SUB extends inArray<SM['substates']>, CC extends SM['context']>
+    substate<SUB extends inArray<SM['substates']>, CC extends SM['context']>
         (currSubstate:SUB):EventToTargetSubStateDef<SM['substates'], SM['events'], CC> {  
         
         let subStateTransitionDescriptors = this.subStateTransitionDescriptors;    

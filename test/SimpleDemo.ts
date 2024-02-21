@@ -73,8 +73,7 @@ const $I = (x) => x;
 
 export function buildMobileAppFsm(): Fsm<RootBoundary> { 
     const fsm = rootFsmBuilderX();    
-
-    /*
+    
     fsm.setEntryEffect('home', context => {})
 
     fsm.init('home', {message:""})
@@ -83,11 +82,10 @@ export function buildMobileAppFsm(): Fsm<RootBoundary> {
     let searchScopedFsm:SubFsm<RootBoundary['states']['search']> = fsm.subFsm('search');
     searchScopedFsm.processEvent('results_received', {results:[]})
     searchScopedFsm.processEvent('result_selected', {})
-
+    
     let seatSelectionScopedFsm:SubFsm<SeatSelectionFsmSubScheme> = fsm.subFsm('seat_selection');
     seatSelectionScopedFsm.processEvent('seatplan_received', {seatPlan:""})
-    seatSelectionScopedFsm.processEvent('backtracked', {}) 
-    */ 
+    seatSelectionScopedFsm.processEvent('backtracked', {})      
     
     return fsm;
 }
@@ -117,24 +115,24 @@ function rootFsmBuilderX(): Fsm<RootBoundary> {
 }
 
 function tripSearchSubFsmBuilder() : SubFsmBuilder<TripSearchFsmSubScheme> {
-    let subBuilder = new SubFsmBuilder<TripSearchFsmSubScheme>();
+    let subBuilder = new SubFsmBuilder<TripSearchFsmSubScheme>(); 
 
     subBuilder
-        .entrySubState("loading")
-        .entrySubState("showing_results", {description:"results_exits", satisfies:(c) => true})
-        .completionSubState('result_selection')
-        .terminationSubState('back_navigation')
+        .entrySubstate("loading")
+        .entrySubstate("showing_results", {description:"results_exits", satisfies:(c) => false})
+        .completionSubstate('result_selection')
+        .terminationSubstate('back_navigation')
 
-    subBuilder.subState("loading")
+    subBuilder.substate("loading")
         .transition('results_received', 'showing_results', $I)
         .transition('error_occured', 'showing_error', $I)
     
-    subBuilder.subState('showing_results')
+    subBuilder.substate('showing_results')
         .transition('searched', 'loading', $I)
         .transition('result_selected', 'result_selection', csc => csc.withResultSelected({tripId:"abcd"}))
         .transition('backtracked', 'back_navigation', $I)
 
-    subBuilder.subState("showing_error")
+    subBuilder.substate("showing_error")
         .transition('retry', 'loading', $I)
         .transition('backtracked', 'back_navigation', $I)
 
@@ -145,19 +143,19 @@ function seatSelectionSubFsmBuilder() : SubFsmBuilder<SeatSelectionFsmSubScheme>
     let subBuilder = new SubFsmBuilder<SeatSelectionFsmSubScheme>();
 
     subBuilder
-        .entrySubState('requesting_seatplan')
-        .completionSubState('seat_reservation_confirmation')
-        .terminationSubState('back_navigation')
+        .entrySubstate('requesting_seatplan')
+        .completionSubstate('seat_reservation_confirmation')
+        .terminationSubstate('back_navigation')
    
-    subBuilder.subState('requesting_seatplan')  
+    subBuilder.substate('requesting_seatplan')  
         .transition('seatplan_received', 'showing_seatplan', $I)
 
-    subBuilder.subState('showing_seatplan')  
+    subBuilder.substate('showing_seatplan')  
         .transition('refreshed', 'requesting_seatplan', $I)
         .transition('seat_reservation_requested', 'seat_reservation_creating', $I)   
         .transition('backtracked', 'back_navigation', $I)
         
-    subBuilder.subState("seat_reservation_creating")  
+    subBuilder.substate("seat_reservation_creating")  
         .transition('seat_reservation_confirmed', 'seat_reservation_confirmation', $I)   
 
     return subBuilder;

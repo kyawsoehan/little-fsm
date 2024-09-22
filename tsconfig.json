@@ -1,8 +1,11 @@
 {
+	"files": ["src/Fsm.ts", "src/FsmBuilder.ts"],
 	"compileOnSave": false,
+	"moduleResolution": "node",
 	"compilerOptions": {
-		"target": "es5",
-		"module": "commonjs",
+		"outDir": "./dist",
+		"target": "ES2015",
+		"module": "es2015",
 		"lib": [
 			"es2017",
 			"dom"

@@ -1,5 +1,6 @@
 import { Fsm } from "../../src/Fsm"
 import { FsmBuilder } from "../../src/FsmBuilder"
+import { expect, test } from 'vitest'
 
 // Jest tips
 // Run specific suite: npm t -- testsuite.test.ts

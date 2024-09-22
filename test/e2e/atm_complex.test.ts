@@ -2,6 +2,7 @@
 
 import { Fsm } from "../../src/Fsm"
 import { FsmBuilder, SubFsmBuilder } from "../../src/FsmBuilder"
+import { expect, test } from 'vitest'
 
 type RootFsmScheme = {
     states: {

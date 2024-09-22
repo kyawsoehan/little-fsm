@@ -1,4 +1,4 @@
-import { ConditionDescriptor, LittleEvent, Fsm, LittleState, RootManifest, StateManifest, inArray, CompoundStateIOConfig, CompoundStateExitEventType } from "./Fsm";
+import { ConditionDescriptor, LittleEvent, Fsm, RootManifest, StateManifest, inArray, CompoundStateIOConfig, CompoundStateExitEventType } from "./Fsm";
 
 interface EventToTargetStateDef<SM extends RootManifest['states'], EM extends RootManifest['events'], CSC> {
     transition<E extends keyof EM, NS extends keyof SM>(eventName:E, nextState:NS, fun:(currentStateContext:CSC, eventParams:EM[E]) => SM[NS]['context']) : EventToTargetStateDef<SM, EM, CSC>
@@ -10,7 +10,10 @@ interface FinalSubStateToTargetStateDef<SM extends RootManifest['states'], SSA e
 }
 
 interface EventToTargetSubStateDef<SM extends StateManifest['substates'], EM extends StateManifest['events'], CC> {
+    //when<E extends keyof EM, N extends inArray<SM>>(items:Record<E, [N, fun:(ctx:CC, event:EM[E]) => CC]>):EventToTargetSubStateDef<SM, EM, CC>
     transition<E extends keyof EM, N extends inArray<SM>>(eventName:E, nextStateName:N, fun:(currentStateContext:CC, eventParams:EM[E]) => CC) : EventToTargetSubStateDef<SM, EM, CC>
+    completion<E extends keyof EM, N extends inArray<SM>>(eventName:E, fun:(currentStateContext:CC, eventParams:EM[E]) => CC) : EventToTargetSubStateDef<SM, EM, CC>
+    termination<E extends keyof EM, N extends inArray<SM>>(eventName:E, fun:(currentStateContext:CC, eventParams:EM[E]) => CC) : EventToTargetSubStateDef<SM, EM, CC>
 }
 
 export interface StateTransitionDescriptor {currState:string, event:string, nextState:string}
@@ -55,7 +58,7 @@ export class FsmBuilder<T extends RootManifest> {
                     stateToEventFunctionMap.set(currState as string, map)
                 }
         
-                let eventToFunctionMap:Map<string, [string, (state:LittleState, event:LittleEvent) => LittleState]> = 
+                let eventToFunctionMap:Map<string, [string, (context:any, event:LittleEvent) => any]> = 
                     stateToEventFunctionMap.get(currState as string)!;
                 eventToFunctionMap.set(eventName as string, [nextStateName as string, fun]); 
 
@@ -103,7 +106,8 @@ export class FsmBuilder<T extends RootManifest> {
 
         let initialSubStateKey = `${parentState}.${descriptor.name as string}`;
         let entryStateConditionDescriptor = {
-            name:initialSubStateKey,
+            key:initialSubStateKey,
+            substate: descriptor.name,
             condition: descriptor.condition
         };
         compoundStateIOConfig.initialSubStates.push(entryStateConditionDescriptor); 
@@ -155,7 +159,7 @@ export class FsmBuilder<T extends RootManifest> {
             this.addInitialSubstateCondition(state, descriptor)
         });
 
-        console.log("sub builder completions", state, subFsmBuilder.getCompletionSubStates());
+        //console.log("sub builder completions", state, subFsmBuilder.getCompletionSubStates());
 
         subFsmBuilder.getCompletionSubStates().forEach(substate => {
             this.addCompletionSubstate(state, substate)
@@ -180,9 +184,11 @@ export class FsmBuilder<T extends RootManifest> {
 export class SubFsmBuilder<SM extends StateManifest> {    
 
     private initialSubStateConditionDescriptors: InitialSubStateEntryConditionDescriptor[] = [];
-    private completionSubStates:string[] = [];
-    private terminationSubStates:string[] = [];
+    
     private subStateTransitionDescriptors: SubStateTransitionDescriptor[] = []; 
+
+    private isCompletable:boolean = true;
+    private isTerminatable:boolean = false;
     
     constructor() {}
 
@@ -194,31 +200,41 @@ export class SubFsmBuilder<SM extends StateManifest> {
         return this;
     };
 
-    completionSubstate<SUB extends inArray<SM['substates']> & string>(substate:SUB) {
-        this.completionSubStates.push(substate);
-        return this;
-    }
-
-    terminationSubstate<SUB extends inArray<SM['substates']> & string>(substate:SUB) {
-        this.terminationSubStates.push(substate);
-        return this;
-    }
-
     substate<SUB extends inArray<SM['substates']>, CC extends SM['context']>
         (currSubstate:SUB):EventToTargetSubStateDef<SM['substates'], SM['events'], CC> {  
         
         let subStateTransitionDescriptors = this.subStateTransitionDescriptors;    
+        let thisBuilder = this;
         
-        let objWithWhen:EventToTargetSubStateDef<SM['substates'], SM['events'], CC> = {            
+        let objWithWhen:EventToTargetSubStateDef<SM['substates'], SM['events'], CC> = {         
+                        
             transition<E extends keyof SM['events'], N extends inArray<SM['substates']>>(eventName:E, nextSubstate:N, fun:(currentContext:CC, eventParams:SM['events'][E]) => CC) {
-                
                 subStateTransitionDescriptors.push({
                     currSubstate: currSubstate as string,
                     eventName: eventName as string,
                     nextSubstate: nextSubstate as string,
                     contextChangeFunction: fun
                 });
-
+                return objWithWhen;
+            },
+            completion<E extends keyof SM['events'], N extends inArray<SM['substates']>>(eventName:E, fun:(currentContext:CC, eventParams:SM['events'][E]) => CC) {
+                subStateTransitionDescriptors.push({
+                    currSubstate: currSubstate as string,
+                    eventName: eventName as string,
+                    nextSubstate: 'completion',
+                    contextChangeFunction: fun
+                });
+                thisBuilder.isCompletable = true;
+                return objWithWhen;
+            },
+            termination<E extends keyof SM['events'], N extends inArray<SM['substates']>>(eventName:E, fun:(currentContext:CC, eventParams:SM['events'][E]) => CC) {
+                subStateTransitionDescriptors.push({
+                    currSubstate: currSubstate as string,
+                    eventName: eventName as string,
+                    nextSubstate: 'termination',
+                    contextChangeFunction: fun
+                });
+                thisBuilder.isTerminatable = true;
                 return objWithWhen;
             }
         }
@@ -233,12 +249,12 @@ export class SubFsmBuilder<SM extends StateManifest> {
         return this.subStateTransitionDescriptors;
     }
 
-    getCompletionSubStates() {
-        return this.completionSubStates;
+    getCompletionSubStates():string[] {
+        return this.isCompletable? ['completion'] : [];
     }
 
-    getTerminationSubStates() {
-        return this.terminationSubStates;
+    getTerminationSubStates():string[] {
+        return this.isTerminatable? ['termination'] : [];
     }
 }
 

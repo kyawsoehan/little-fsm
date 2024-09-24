@@ -17,7 +17,7 @@ npm install little-fsm --save
 
 ## Quick Start
 
-```
+```js
 type VendingMachineManifest = {
     states: {
         'idle': {

@@ -1,8 +1,60 @@
-A TypeScript-based, strongly-typed state machine library designed to be simple, intuitive, and powerful. 
+# little-fsm
 
-- Strong Type Safety: Leverage TypeScript's advanced type system to eliminate runtime errors and ensure compile-time safety.
-- Easy to Use: Designed with simplicity in mind, allowing for rapid setup and smooth integration into any project.
-- Fully Typed Transitions and States: Define and manage your states, transitions, and actions with confidence, using clear and expressive type definitions.
-- Minimalistic yet Powerful: Lightweight, with a simple API, but powerful enough to handle even the most complex state-driven logic.
+- [What is little-fsm?](#what-is-little-fsm)
+- [Installation](#installation)
+- [Quick Start](#quick-start)
 
-Whether you're building a UI-driven application, handling business workflows, or managing state-heavy processes, this library helps you structure and visualize your states clearly, with complete control over transitions and actions.
+## What is little-fsm?
+A strongly-typed lightweight state machine. 
+
+## Installation
+
+### npm
+
+```bash
+npm install little-fsm --save
+```
+
+## Quick Start
+
+```
+type VendingMachineManifest = {
+    states: {
+        'idle': {
+            context: {}
+        },
+        'ready_to_order': {
+            context: {}
+        },
+        'dispensing': {
+            context: {}
+        },
+        'refunding': {
+            context: {}
+        }
+    },
+    events: {
+        "coin_inserted": {},
+        "item_selected" : {},
+        "dispensed": {}
+        "cancelled" : {},
+        "refunded" : {},
+    }
+}
+
+let noContextChange = (c, e) => c;
+let builder = new FsmBuilder<OtpFsmManifest>();
+builder.atomicState('idle')
+    .transition('coin_inserted', 'ready_to_order', noContextChange);
+
+builder.atomicState('ready_to_order')
+    .transition('item_selected', 'dispensing', noContextChange);
+    .transition('cancelled', 'refunding', noContextChange);
+
+builder.atomicState('dispensing')
+    .transition('dispensed', 'idle', noContextChange);
+builder.atomicState('refunding')
+    .transition('refunded', 'idle', noContextChange);
+
+let fsm = builder.build();
+```

@@ -22,7 +22,7 @@ export type RootManifest = {
 }
 
 export class LittleEvent {
-    name:string;
+    name:string = "";
     data:any
 }
 

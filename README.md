@@ -26,6 +26,7 @@ Let's construct a state machine to model the state transitions in a vending mach
 - After dispensing, the machine transitions to the refunding state, where it returns the excess amount. 
 - Once the refund (if any) is complete, the machine returns to the idle state, ready for the next customer interaction.
 
+### Fsm with empty context
 
 ```js
 import { NoContext, retainContext, FsmBuilder } from "little-fsm"
@@ -77,14 +78,20 @@ When the customer inserts money, we trigger an event to the finite state machine
 fsm.processEvent('coin_inserted', {})
 ```
 
+### Fsm with the context in `ready-to-order` state
+
 Here’s how to incorporate the concept of an amount balance in the context of the ready-to-order state:
 
 ```js
 ...
 type VendingMachineManifest = {
     states: {
-        'idle': NoContext, 
-        'ready-to-order': {amountBalance:number},
+        'idle': NoContext,
+        'ready_to_order': {
+            context: {
+                balanceAmount:number
+            }
+        },
         'dispensing': NoContext,
         'refunding': NoContext
     },
@@ -110,4 +117,22 @@ builder.atomicState('idle')
             return {amountBalance: event.insertedAmount}
         });
 ...
+```
+
+When inserting money while the system is already at `ready-to-order` state.
+```js
+builder.atomicState('ready_to_order')
+    .transition('item_selected', 'dispensing', retainContext)
+    .transition('cancelled', 'refunding', retainContext)
+    .transition('coin_inserted', 'ready_to_order', (ctx, event) => {
+        return {
+            balanceAmount: ctx.balanceAmount + event.insertedAmount
+        }
+    });
+```
+When the customer inserts money, we trigger an event to the finite state machine (FSM).
+```js
+fsm.processEvent('coin_inserted', {
+    insertedAmount: 5
+})
 ```

@@ -1,6 +1,6 @@
 {
   "name": "little-fsm",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "description": "A TypeScript-based, strongly-typed state machine library designed to be simple and lightweight.",
   "type": "module",
   "files": [

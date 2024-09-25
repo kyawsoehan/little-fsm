@@ -100,12 +100,14 @@ type VendingMachineManifest = {
 ```
 When the customer inserts money, the system transitions to the `ready-to-order` state. At this point, the context is changed to `NoContext` to `{amountBalance:number}`.
 
+Notice that the new state context is derived from the existing state context and the event data.
+
 ```js
 ...
 builder.atomicState('idle')
     .transition('coin_inserted', 'ready-to-order', 
-        (context, event) => return {
-            amountBalance: event.insertedAmount
+        (context, event) => {
+            return {amountBalance: event.insertedAmount}
         });
 ...
 ```

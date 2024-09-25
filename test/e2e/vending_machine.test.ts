@@ -40,6 +40,8 @@ function buildFsm(): Fsm<VendingMachineManifest> {
 test("expect initial state to be idle", () => {
     let fsm = buildFsm();    
     fsm.init('idle', {});
-    
+
     expect('initial').toBe(fsm.getCurrentState());
+
+    fsm.processEvent('coin_inserted', {})
 });

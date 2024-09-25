@@ -42,9 +42,9 @@ function buildAuthState() : SubFsmBuilder<RootFsmScheme['states']['auth']> {
 
 function buildRootState(): Fsm<RootFsmScheme> {
     let builder = new FsmBuilder<RootFsmScheme>();
-    builder.compoundState('home', buildHomeState())
+    builder.compositeState('home', buildHomeState())
         .transitionOnCompletion('auth', c => c)
-    builder.compoundState('auth', buildAuthState())
+    builder.compositeState('auth', buildAuthState())
     return builder.build();
 }
  
@@ -61,9 +61,9 @@ test("works with a shallow object", () => {
     expect('auth').toBe(fsm.getCurrentState());
 }); */
 
-/*
+
 test("works with a deep object", () => {
     expect(100).toBe(99 + 1);
-});*/
+});
 
 //npm i --save-dev @types/jest` or `npm i --save-dev @types/mocha`.ts(2582)

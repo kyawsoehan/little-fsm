@@ -26,11 +26,11 @@ type RootFsmScheme = {
 
 function buildRootState(): Fsm<RootFsmScheme> {
     let builder = new FsmBuilder<RootFsmScheme>();
-    builder.atomicState('home')
+    builder.simpleState('home')
         .transition('card_inserted', 'pin_entry', (c, e) => {
             return {cardNumber:e.cardNumber}
         })
-    builder.atomicState('pin_entry')
+    builder.simpleState('pin_entry')
         .transition('pin_entered', 'account_actions', (c, e) => {
             return {accountNumber: ""}
         })    

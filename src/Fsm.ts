@@ -1,6 +1,6 @@
 export type StateType = 'INITIAL' | 'INTERNAL' | 'FINAL';
 
-export type CompoundStateExitEventType = "@completed" | "@terminated"
+export type CompositeStateExitEventType = "@completed" | "@terminated"
 
 export type inArray<T> = T[keyof T];
 
@@ -39,9 +39,9 @@ export interface ConditionDescriptor<C> {
 }
 
 
-function calculateInitialSubstate(parentStateDetails:StateDetails, compoundStateIOConfig:CompoundStateIOConfig):StateDetails {    
+function calculateInitialSubstate(parentStateDetails:StateDetails, compositeStateIOConfig:CompositeStateIOConfig):StateDetails {    
     let parentStateName = parentStateDetails.state;
-    let initialSubStateDescriptors = compoundStateIOConfig.initialSubStates;
+    let initialSubStateDescriptors = compositeStateIOConfig.initialSubStates;
     if(initialSubStateDescriptors.length > 0) {
         if(initialSubStateDescriptors.length == 1) {
             console.info(`There is only one inital substate. Initial substate is set to [${initialSubStateDescriptors[0].key}]`);
@@ -69,7 +69,7 @@ function calculateInitialSubstate(parentStateDetails:StateDetails, compoundState
             }
         }
     } else {
-        throw new Error(`No initial substate is defind for the compound state ${parentStateDetails}.`);
+        throw new Error(`No initial substate is defind for the composite state ${parentStateDetails}.`);
     }
 }
 
@@ -120,7 +120,7 @@ export interface SubFsm<SM extends StateManifest> {
     setEnterEffect<S extends inArray<SM['substates']>, C extends SM['context']>(substate:S, effectFun:(context:C) => void):void
 }
 
-export interface CompoundStateIOConfig {
+export interface CompositeStateIOConfig {
     initialSubStates: {key:string, substate:string, condition?:ConditionDescriptor<any>}[],
     completionSubStates: string[],
     terminationSubStates: string[]
@@ -137,19 +137,19 @@ export class Fsm<T extends RootManifest> {
 
     constructor(
         private readonly stateToEventFunctionMap: Map<string, Map<string, [string, (currStateContext:any, event:any) => any]>>,
-        private readonly compoundStateIOMap: Map<string, CompoundStateIOConfig>) {}
+        private readonly compositeStateIOMap: Map<string, CompositeStateIOConfig>) {}
 
     internals() {
         return {
             stateToEventFunctionMap: this.stateToEventFunctionMap,
-            compoundStateIOMap: this.compoundStateIOMap
+            compositeStateIOMap: this.compositeStateIOMap
         }
     }
 
     init<S extends keyof T['states'] & string>(currStateName:S, stateContext:T['states'][S]['context']) {
         this.currentStateDetails = new StateDetails(currStateName, null, stateContext);
-        if(this.compoundStateIOMap.has(this.currentStateDetails.state)) {
-            let newState = calculateInitialSubstate(this.currentStateDetails, this.compoundStateIOMap.get(this.currentStateDetails.state)!)
+        if(this.compositeStateIOMap.has(this.currentStateDetails.state)) {
+            let newState = calculateInitialSubstate(this.currentStateDetails, this.compositeStateIOMap.get(this.currentStateDetails.state)!)
             //console.log("Calculated initial substate", newState);
             this.currentStateDetails = newState;
         } 
@@ -211,23 +211,23 @@ export class Fsm<T extends RootManifest> {
         }
     }
     
-    private exitCompoundState(state:string, eventName:CompoundStateExitEventType) {
-        let currentCompoundStateDetails = new StateDetails(state, null, this.currentStateDetails!.context);
+    private exitCompositeState(state:string, eventName:CompositeStateExitEventType) {
+        let currentCompositeStateDetails = new StateDetails(state, null, this.currentStateDetails!.context);
         
         let event:LittleEvent = {
             name: eventName,
             data: {}
         };
-        let newStateDetails = calculateNextState(currentCompoundStateDetails, event, this.stateToEventFunctionMap);
+        let newStateDetails = calculateNextState(currentCompositeStateDetails, event, this.stateToEventFunctionMap);
         if(newStateDetails) {
-            if(this.compoundStateIOMap.has(newStateDetails.state)) {
-                newStateDetails = calculateInitialSubstate(newStateDetails, this.compoundStateIOMap.get(newStateDetails.state)!)
+            if(this.compositeStateIOMap.has(newStateDetails.state)) {
+                newStateDetails = calculateInitialSubstate(newStateDetails, this.compositeStateIOMap.get(newStateDetails.state)!)
             }
-            this.logStateTransition(currentCompoundStateDetails, event, newStateDetails);  
+            this.logStateTransition(currentCompositeStateDetails, event, newStateDetails);  
             this.currentStateDetails = newStateDetails;
         } else {
             console.warn("New state cannot be calculated.");
-            this.logStateTransition(currentCompoundStateDetails, event);    
+            this.logStateTransition(currentCompositeStateDetails, event);    
         }  
     }
 
@@ -245,8 +245,8 @@ export class Fsm<T extends RootManifest> {
         console.debug("Processing [event:%s] on current [state:%s]", event.name, this.currentStateDetails.state);        
         let newStateDetails = calculateNextState(this.currentStateDetails, event, this.stateToEventFunctionMap);        
         if(newStateDetails) { 
-            if(this.compoundStateIOMap.has(newStateDetails.state)) {
-                newStateDetails = calculateInitialSubstate(newStateDetails, this.compoundStateIOMap.get(newStateDetails.state)!)
+            if(this.compositeStateIOMap.has(newStateDetails.state)) {
+                newStateDetails = calculateInitialSubstate(newStateDetails, this.compositeStateIOMap.get(newStateDetails.state)!)
             }
             this.logStateTransition(this.currentStateDetails, event, newStateDetails);  
             this.stateChangeEffect(this.currentStateDetails, newStateDetails, eventName as string);
@@ -277,19 +277,19 @@ export class Fsm<T extends RootManifest> {
             this.logStateTransition(this.currentStateDetails, event, newStateDetails);    
             this.currentStateDetails = newStateDetails;                        
 
-            //TODO handle compound state exit
-            if(this.compoundStateIOMap.has(state as string)) {
-                this.compoundStateIOMap.get(state as string)?.completionSubStates.forEach(finalSubStateKey => {
+            //TODO handle composite state exit
+            if(this.compositeStateIOMap.has(state as string)) {
+                this.compositeStateIOMap.get(state as string)?.completionSubStates.forEach(finalSubStateKey => {
                     if(finalSubStateKey == newStateDetails?.key) {
                         console.log("Reached the final completion state: ", finalSubStateKey);                        
-                        this.exitCompoundState(state as string, '@completed');
+                        this.exitCompositeState(state as string, '@completed');
                     }
                 })
 
-                this.compoundStateIOMap.get(state as string)?.terminationSubStates.forEach(finalSubStateKey => {
+                this.compositeStateIOMap.get(state as string)?.terminationSubStates.forEach(finalSubStateKey => {
                     if(finalSubStateKey == newStateDetails?.key) {
                         console.log("Reached the final completion state: ", finalSubStateKey);                        
-                        this.exitCompoundState(state as string, '@terminated');
+                        this.exitCompositeState(state as string, '@terminated');
                     }
                 })
             }

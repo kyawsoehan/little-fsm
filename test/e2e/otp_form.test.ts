@@ -35,13 +35,13 @@ type OtpFsmManifest = {
 function buildRootState(): Fsm<OtpFsmManifest> {
     let noContextChange = (c, e) => c;
     let builder = new FsmBuilder<OtpFsmManifest>();
-    builder.atomicState('initial')
+    builder.simpleState('initial')
         .transition('otp_requested', 'otp_entry', noContextChange);
-    builder.atomicState('otp_entry')
+    builder.simpleState('otp_entry')
         .transition('otp_submitted', 'verifying_otp', noContextChange);
-    builder.atomicState('verifying_otp')
+    builder.simpleState('verifying_otp')
         .transition('otp_verified', 'success', noContextChange);
-    builder.atomicState('verifying_otp')
+    builder.simpleState('verifying_otp')
         .transition('otp_not_verified', 'error', noContextChange);
 
     return builder.build();

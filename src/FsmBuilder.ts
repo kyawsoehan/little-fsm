@@ -1,4 +1,4 @@
-import { ConditionDescriptor, LittleEvent, Fsm, RootManifest, StateManifest, inArray, CompoundStateIOConfig, CompoundStateExitEventType } from "./Fsm";
+import { ConditionDescriptor, LittleEvent, Fsm, RootManifest, StateManifest, inArray, CompositeStateIOConfig, CompositeStateExitEventType } from "./Fsm";
 
 export type NoContext = {
     context: {}
@@ -45,7 +45,7 @@ export class TypedState<SM extends RootManifest['states'], S extends keyof SM> {
 export class FsmBuilder<T extends RootManifest> {
 
     private stateToEventFunctionMap = new Map<string, Map<string, [string, (currStateContext:any, event:any) => any]>>();    
-    private compoundStateIOMap = new Map<string, CompoundStateIOConfig>();    
+    private compoundStateIOMap = new Map<string, CompositeStateIOConfig>();    
 
     constructor() {}   
 
@@ -53,7 +53,7 @@ export class FsmBuilder<T extends RootManifest> {
         return new Fsm(this.stateToEventFunctionMap, this.compoundStateIOMap);
     }
 
-    atomicState<S extends keyof T['states'], CC extends T['states'][S]['context']>
+    simpleState<S extends keyof T['states'], CC extends T['states'][S]['context']>
         (currState:S):EventToTargetStateDef<T['states'], T['events'], CC> {     
 
         let stateToEventFunctionMap = this.stateToEventFunctionMap;  
@@ -76,7 +76,7 @@ export class FsmBuilder<T extends RootManifest> {
         return objWithWhen;
     }
 
-    private getOrCreateCompoundStateIOConfig(compoundState:string):CompoundStateIOConfig {
+    private getOrCreateCompoundStateIOConfig(compoundState:string):CompositeStateIOConfig {
         if(!this.compoundStateIOMap.has(compoundState)) {
             this.compoundStateIOMap.set(compoundState, {
                 initialSubStates: [],
@@ -87,7 +87,7 @@ export class FsmBuilder<T extends RootManifest> {
         return this.compoundStateIOMap.get(compoundState)!; 
     }
 
-    compoundState<S extends keyof T['states'] & string, CSC extends T['states'][S]['context']>
+    compositeState<S extends keyof T['states'] & string, CSC extends T['states'][S]['context']>
         (currState:S, subFsmBuilder:SubFsmBuilder<T['states'][S]>):FinalSubStateToTargetStateDef<T['states'],T['states'][S]['substates'], CSC> {  
         
         this.integrateSubFsmBuilder(currState, subFsmBuilder);
@@ -149,7 +149,7 @@ export class FsmBuilder<T extends RootManifest> {
     }
 
     private addCompoundStateExitTransition(
-        parentState:string, eventName:CompoundStateExitEventType, nextState:string, contextChangeFunction:(context:any, event:any) => any) {
+        parentState:string, eventName:CompositeStateExitEventType, nextState:string, contextChangeFunction:(context:any, event:any) => any) {
         
         if(!this.stateToEventFunctionMap.has(parentState)) {
             let map = new Map<string, [string, (event) => any]>();

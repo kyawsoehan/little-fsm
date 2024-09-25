@@ -1,5 +1,13 @@
 import { ConditionDescriptor, LittleEvent, Fsm, RootManifest, StateManifest, inArray, CompoundStateIOConfig, CompoundStateExitEventType } from "./Fsm";
 
+export type NoContext = {
+    context: {}
+}
+
+export function retainContext(c, e) {
+    return c;
+};
+
 interface EventToTargetStateDef<SM extends RootManifest['states'], EM extends RootManifest['events'], CSC> {
     transition<E extends keyof EM, NS extends keyof SM>(eventName:E, nextState:NS, fun:(currentStateContext:CSC, eventParams:EM[E]) => SM[NS]['context']) : EventToTargetStateDef<SM, EM, CSC>
 }

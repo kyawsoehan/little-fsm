@@ -35,13 +35,13 @@ type VendingMachineManifest = {
     states: {
         'idle': NoContext, 
         'ready-to-order': NoContext,
-        'dispensing': NoContext,
+        'dispensing-item': NoContext,
         'refunding': NoContext
     },
     events: {
-        "coin_inserted": {},
-        "item_selected" : {},
-        "dispensed": {}
+        "money-inserted": {},
+        "item-selected" : {},
+        "item-dispensed": {}
         "cancelled" : {},
         "refunded" : {},
     }
@@ -51,14 +51,14 @@ function buildFsm(): Fsm<VendingMachineManifest> {
     let builder = new FsmBuilder<VendingMachineManifest>();
 
     builder.atomicState('idle')
-        .transition('coin_inserted', 'ready-to-order', retainContext);
+        .transition('money-inserted', 'ready-to-order', retainContext);
 
     builder.atomicState('ready-to-order')
-        .transition('item_selected', 'dispensing', retainContext)
+        .transition('item-selected', 'dispensing-item', retainContext)
         .transition('cancelled', 'refunding', retainContext);
 
-    builder.atomicState('dispensing')
-        .transition('dispensed', 'refunding', retainContext);
+    builder.atomicState('dispensing-item')
+        .transition('item-dispensed', 'refunding', retainContext);
 
     builder.atomicState('refunding')
         .transition('refunded', 'idle', retainContext);
@@ -74,7 +74,7 @@ fsm.init('idle', {});
 
 When the customer inserts money, we trigger an event to the finite state machine (FSM).
 ```js
-fsm.processEvent('coin_inserted', {})
+fsm.processEvent('money-inserted', {})
 ```
 
 ### Fsm with the context in `ready-to-order` state
@@ -86,18 +86,18 @@ Here’s how to incorporate the concept of an amount balance in the context of t
 type VendingMachineManifest = {
     states: {
         'idle': NoContext,
-        'ready_to_order': {
+        'ready-to-order': {
             context: {
                 balanceAmount:number
             }
         },
-        'dispensing': NoContext,
+        'dispensing-item': NoContext,
         'refunding': NoContext
     },
     events: {
-        "coin_inserted": {insertedAmount:number},
-        "item_selected" : {},
-        "dispensed": {}
+        "money-inserted": {insertedAmount:number},
+        "item-selected" : {},
+        "item-dispensed": {}
         "cancelled" : {},
         "refunded" : {},
     }
@@ -111,7 +111,7 @@ Notice that the new state context is derived from the existing state context and
 ```js
 ...
 builder.atomicState('idle')
-    .transition('coin_inserted', 'ready-to-order', 
+    .transition('money-inserted', 'ready-to-order', 
         (context, event) => {
             return {amountBalance: event.insertedAmount}
         });
@@ -120,10 +120,10 @@ builder.atomicState('idle')
 
 When inserting money while the system is already at `ready-to-order` state.
 ```js
-builder.atomicState('ready_to_order')
-    .transition('item_selected', 'dispensing', retainContext)
+builder.atomicState('ready-to-order')
+    .transition('item-selected', 'dispensing-item', retainContext)
     .transition('cancelled', 'refunding', retainContext)
-    .transition('coin_inserted', 'ready_to_order', (ctx, event) => {
+    .transition('money-inserted', 'ready-to-order', (ctx, event) => {
         return {
             balanceAmount: ctx.balanceAmount + event.insertedAmount
         }
@@ -131,26 +131,26 @@ builder.atomicState('ready_to_order')
 ```
 When the customer inserts money, we trigger an event to the finite state machine (FSM).
 ```js
-fsm.processEvent('coin_inserted', {
+fsm.processEvent('money-inserted', {
     insertedAmount: 5
 })
 ```
 
 You can observe the state entry into `ready-to-order` state:
 ```js
-fsm.setEntryEffect('ready_to_order', ctx => {
+fsm.setEntryEffect('ready-to-order', ctx => {
     // display balance on screen
     // or play sounds to notify user of ready to order stage
     console.log("Current balance:", ctx.balanceAmount);
 })
 ```
 
-Example implementation of observing the entry into the `dispensing` state:
+Example implementation of observing the entry into the `dispensing-item` state:
 ```js
-fsm.setEntryEffect('dispensing', ctx => {
+fsm.setEntryEffect('dispensing-item', ctx => {
     // Simulating the duration of dispensing a product item.
     // In reality, you may be listening to a hardware event.
     setTimeout(() => {
-        fsm.processEvent('dispensed')
+        fsm.processEvent('item-dispensed')
     }, 5000); // 5 seconds
 })

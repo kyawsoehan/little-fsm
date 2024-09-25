@@ -14,7 +14,7 @@ A strongly-typed lightweight state machine.
 ```bash
 npm install little-fsm --save
 ```
-View the [npm repository](https://www.npmjs.com/package/little-fsm) of little-fsm for details.
+Check the [npm repository](https://www.npmjs.com/package/little-fsm) of little-fsm for details.
 
 ## Quick Start
 
@@ -30,7 +30,6 @@ Let's construct a state machine to model the state transitions in a vending mach
 
 ```js
 import { NoContext, retainContext, FsmBuilder } from "little-fsm"
-import { expect, test } from 'vitest'
 
 type VendingMachineManifest = {
     states: {
@@ -136,3 +135,22 @@ fsm.processEvent('coin_inserted', {
     insertedAmount: 5
 })
 ```
+
+You can observe the state entry into `ready-to-order` state:
+```js
+fsm.setEntryEffect('ready_to_order', ctx => {
+    // display balance on screen
+    // or play sounds to notify user of ready to order stage
+    console.log("Current balance:", ctx.balanceAmount);
+})
+```
+
+Example implementation of observing the entry into the `dispensing` state:
+```js
+fsm.setEntryEffect('dispensing', ctx => {
+    // Simulating the duration of dispensing a product item.
+    // In reality, you may be listening to a hardware event.
+    setTimeout(() => {
+        fsm.processEvent('dispensed')
+    }, 5000); // 5 seconds
+})

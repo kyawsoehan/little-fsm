@@ -50,17 +50,17 @@ type VendingMachineManifest = {
 function buildFsm(): Fsm<VendingMachineManifest> {
     let builder = new FsmBuilder<VendingMachineManifest>();
 
-    builder.atomicState('idle')
+    builder.simpleState('idle')
         .transition('money-inserted', 'ready-to-order', retainContext);
 
-    builder.atomicState('ready-to-order')
+    builder.simpleState('ready-to-order')
         .transition('item-selected', 'dispensing-item', retainContext)
         .transition('cancelled', 'refunding', retainContext);
 
-    builder.atomicState('dispensing-item')
+    builder.simpleState('dispensing-item')
         .transition('item-dispensed', 'refunding', retainContext);
 
-    builder.atomicState('refunding')
+    builder.simpleState('refunding')
         .transition('refunded', 'idle', retainContext);
 
     return builder.build();
@@ -110,7 +110,7 @@ Notice that the new state context is derived from the existing state context and
 
 ```js
 ...
-builder.atomicState('idle')
+builder.simpleState('idle')
     .transition('money-inserted', 'ready-to-order', 
         (context, event) => {
             return {amountBalance: event.insertedAmount}
@@ -120,7 +120,7 @@ builder.atomicState('idle')
 
 When inserting money while the system is already at `ready-to-order` state.
 ```js
-builder.atomicState('ready-to-order')
+builder.simpleState('ready-to-order')
     .transition('item-selected', 'dispensing-item', retainContext)
     .transition('cancelled', 'refunding', retainContext)
     .transition('money-inserted', 'ready-to-order', (ctx, event) => {

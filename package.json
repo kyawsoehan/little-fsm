@@ -1,7 +1,7 @@
 {
   "name": "little-fsm",
-  "version": "0.1.6",
-  "description": "A TypeScript-based, strongly-typed state machine library designed to be simple and lightweight.",
+  "version": "0.1.7",
+  "description": "A strongly-typed lightweight state machine library.",
   "type": "module",
   "files": [
     "dist",
@@ -14,8 +14,8 @@
   "types": "./dist/index.d.ts",
   "scripts": {
     "test": "vitest",
-    "build": "tsc",
-    "build:rollup": "rollup -c"
+    "build:tsc": "tsc",
+    "build": "rollup -c"
   },
   "author": "Kyaw Soe Han",
   "license": "ISC",

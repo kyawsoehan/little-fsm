@@ -1,6 +1,7 @@
 import { Fsm } from "../../src/Fsm"
 import { FsmBuilder } from "../../src/FsmBuilder"
 import { expect, test } from 'vitest'
+import { NoContext } from "../../src/FsmHelpers"
 
 // Jest tips
 // Run specific suite: npm t -- testsuite.test.ts
@@ -8,21 +9,11 @@ import { expect, test } from 'vitest'
 
 type OtpFsmManifest = {
     states: {
-        'initial': {
-            context: {}
-        },
-        'otp_entry': {
-            context: {}
-        },
-        'verifying_otp': {
-            context: {}
-        },
-        'success': {
-            context: {}
-        },
-        'error': {
-            context: {}
-        }
+        'initial': NoContext,
+        'otp_entry': NoContext,
+        'verifying_otp': NoContext,
+        'success': NoContext,
+        'error': NoContext,
     },
     events: {
         "otp_requested": {},

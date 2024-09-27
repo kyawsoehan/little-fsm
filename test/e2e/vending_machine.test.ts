@@ -1,5 +1,6 @@
 import { Fsm } from "../../src/Fsm"
-import { NoContext, retainContext, FsmBuilder } from "../../src/FsmBuilder"
+import { FsmBuilder } from "../../src/FsmBuilder"
+import { NoContext, retainContext} from "../../src/FsmHelpers"
 import { expect, test } from 'vitest'
 
 type VendingMachineManifest = {

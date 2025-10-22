@@ -43,19 +43,7 @@ Imagine a hair dryer with a single button that cycles through:
 
 ![alt text](image-3.png)
 
-```
----
-config:
-  look: classic
-  theme: neutral
-  layout: elk
----
-stateDiagram
-  direction LR
-  OFF --> LOW:PRESS
-  LOW --> HIGH:PRESS
-  HIGH --> OFF:PRESS
-```
+
 
 While the states alone describe the mode of operation, we often need additional details that define how the state behaves.
 

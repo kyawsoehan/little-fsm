@@ -7,6 +7,9 @@
 ## What is little-fsm?
 A strongly-typed lightweight state machine. 
 
+Learn more about our approach here.
+[Our approach](./docs/philosophy.md)
+
 ## Installation
 
 ### npm

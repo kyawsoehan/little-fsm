@@ -12,10 +12,6 @@ A finite state machine specifies a system's behavior using a finite number of st
 
 Events triggered the transitions between states, changing how the system behaves.
 
-The image below shows how we can model the behavior of a game character based on button press events.
-
-![Game character state machine](image-5.png)
-
 ### What is context?
 
 Some state machines need context, while others don’t.

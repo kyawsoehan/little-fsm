@@ -1,9 +1,7 @@
-### Example: Hair Dryer Behavior — Three States, Single Context
-Let’s model a hair dryer’s behavior. 
+### Example: File Upload Behavior — Two States, Two Contexts
+Let’s model a super simple file upload’s behavior. 
 
 It has three states — `idle` and `uploading` — and two events: `started` and `completed`.
-
-Each state carries the same context values: `{heat: number, speed: number}`
 
 #### Define the root schema
 

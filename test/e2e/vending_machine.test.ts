@@ -52,7 +52,7 @@ function buildFsm(): Fsm<VendingMachineManifest> {
 }
    
 test("expect initial state to be idle", () => {
-    let fsm = buildFsm();    
+    let fsm = buildFsm();        
     fsm.init('idle', {});
 
     expect('idle').toBe(fsm.getCurrentState());

@@ -1,8 +1,12 @@
-import { ConditionDescriptor, LittleEvent, Fsm, RootManifest, StateManifest, inArray, CompositeStateIOConfig, CompositeStateExitEventType } from "./Fsm";
+import { ConditionDescriptor, LittleEvent, Fsm, RootManifest, StateManifest, inArray, CompositeStateIOConfig, ChoiceCondition, CompositeStateExitEventType } from "./Fsm";
 
 
 interface EventToTargetStateDef<SM extends RootManifest['states'], EM extends RootManifest['events'], CSC> {
     transition<E extends keyof EM, NS extends keyof SM>(eventName:E, nextState:NS, fun:(currentStateContext:CSC, eventParams:EM[E]) => SM[NS]['context']) : EventToTargetStateDef<SM, EM, CSC>
+}
+
+interface ConditionToTargetStateDef<SM extends RootManifest['states'], CSC> {
+    transition<NS extends keyof SM>(cond:(currentContext:CSC) => boolean, nextState:NS, fun:(currentStateContext:CSC) => SM[NS]['context']) : ConditionToTargetStateDef<SM, CSC>
 }
 
 interface FinalSubStateToTargetStateDef<SM extends RootManifest['states'], SSA extends StateManifest['substates'], CSC> {
@@ -39,11 +43,12 @@ export class FsmBuilder<T extends RootManifest> {
 
     private stateToEventFunctionMap = new Map<string, Map<string, [string, (currStateContext:any, event:any) => any]>>();    
     private compoundStateIOMap = new Map<string, CompositeStateIOConfig>();    
+    private choiceStateToConditionsMap = new Map<string, ChoiceCondition[]>();    
 
     constructor() {}   
 
     build():Fsm<T> {
-        return new Fsm(this.stateToEventFunctionMap, this.compoundStateIOMap);
+        return new Fsm(this.stateToEventFunctionMap, this.compoundStateIOMap, this.choiceStateToConditionsMap);
     }
 
     simpleState<S extends keyof T['states'], CC extends T['states'][S]['context']>
@@ -62,6 +67,34 @@ export class FsmBuilder<T extends RootManifest> {
                 let eventToFunctionMap:Map<string, [string, (context:any, event:LittleEvent) => any]> = 
                     stateToEventFunctionMap.get(currState as string)!;
                 eventToFunctionMap.set(eventName as string, [nextStateName as string, fun]); 
+
+                return objWithWhen;
+            }
+        }
+        return objWithWhen;
+    }
+
+    choiceState<S extends keyof T['states'], CC extends T['states'][S]['context']>
+        (currState:S):ConditionToTargetStateDef<T['states'], CC> {   
+            
+        let choiceStateToConditionsMap = this.choiceStateToConditionsMap;
+        
+        let objWithWhen:ConditionToTargetStateDef<T['states'], CC> = {
+
+            transition<N extends keyof T['states']>(cond:(currentContext:CC) => boolean, nextStateName:N, fun:(currentContext:CC) => T['states'][N]['context']) {
+                
+                let choiceCondition: ChoiceCondition = {
+                    targetState: nextStateName as string,
+                    condition: cond,
+                    changeContext: fun
+                }
+                
+                if(!choiceStateToConditionsMap.has(currState as string)) {
+                    choiceStateToConditionsMap.set(currState as string, [ choiceCondition ])
+                } else {
+                    let choiceConditions:ChoiceCondition[] = choiceStateToConditionsMap.get(currState as string);
+                    choiceConditions.push(choiceCondition);
+                }                
 
                 return objWithWhen;
             }

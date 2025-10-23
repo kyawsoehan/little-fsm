@@ -126,6 +126,12 @@ export interface CompositeStateIOConfig {
     terminationSubStates: string[]
 }
 
+export interface ChoiceCondition {
+  targetState: string;
+  condition: (ctx: any) => boolean;
+  changeContext: (ctx:any) => any
+}
+
 export class Fsm<T extends RootManifest> {
 
     private currentStateDetails: StateDetails|null = null;   
@@ -137,7 +143,8 @@ export class Fsm<T extends RootManifest> {
 
     constructor(
         private readonly stateToEventFunctionMap: Map<string, Map<string, [string, (currStateContext:any, event:any) => any]>>,
-        private readonly compositeStateIOMap: Map<string, CompositeStateIOConfig>) {}
+        private readonly compositeStateIOMap: Map<string, CompositeStateIOConfig>, 
+        private readonly choiceStateToConditionsMap: Map<string, ChoiceCondition[]>) {}
 
     internals() {
         return {
@@ -168,6 +175,13 @@ export class Fsm<T extends RootManifest> {
             throw new Error("Initial state is not defined.");
         } 
         return this.currentStateDetails.context as C
+    }
+
+    getCurrentSubState<S extends keyof T['states'], C extends T['states'][S]['context']>(): S {
+        if(this.currentStateDetails == null) {
+            throw new Error("Initial state is not defined.");
+        } 
+        return this.currentStateDetails.substate as S;
     }
 
     setStateChangeEffect(effect:(oldStateDetais:StateDetails, newStateDetails:StateDetails, eventName?:string) => void) {
@@ -208,6 +222,24 @@ export class Fsm<T extends RootManifest> {
             console.debug("Executing OnEnterEffect for state=%s ...", stateDetails.key);
             onStateEnterEffectFun(stateDetails.context);
             console.debug("Executed OnEnterEffect for state=%s", stateDetails.key);
+        }
+
+        // if the current state is a choice pseudo state, immediatly execute the conditions
+        if(this.choiceStateToConditionsMap.has(stateDetails.key)) {
+            let conditions:ChoiceCondition[] = this.choiceStateToConditionsMap.get(stateDetails.key);
+            let matchedCondition:ChoiceCondition|undefined = conditions.find(it => it.condition(stateDetails.context));
+            if(matchedCondition) {
+                console.debug("Found the matched condition: ", matchedCondition);
+
+                let newStateDetails:StateDetails = new StateDetails(
+                    matchedCondition.targetState, null, matchedCondition.changeContext(stateDetails.context));
+                if(this.compositeStateIOMap.has(newStateDetails.state)) {
+                    newStateDetails = calculateInitialSubstate(newStateDetails, this.compositeStateIOMap.get(newStateDetails.state)!)
+                }
+                console.debug("New state details after choice: ", newStateDetails);
+                this.logStateTransition(this.currentStateDetails, new LittleEvent(), newStateDetails);  
+                this.currentStateDetails = newStateDetails;
+            }
         }
     }
     

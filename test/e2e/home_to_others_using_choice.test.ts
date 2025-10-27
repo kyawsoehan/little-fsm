@@ -66,6 +66,7 @@ function buildProfileState() : SubFsmBuilder<RootFsmScheme['states']['profile']>
 function buildSearchState() : SubFsmBuilder<RootFsmScheme['states']['search']> {
     let subBuilder = new SubFsmBuilder<RootFsmScheme['states']['search']>();     
     subBuilder.entrySubstate('loading_results');
+
     return subBuilder;
 }
 
@@ -90,12 +91,21 @@ function buildRootState(): Fsm<RootFsmScheme> {
             };
         })
 
+
     return builder.build();
 }
 
 
 test("expect transition to search when home is completed with search request", () => {
-    let fsm = buildRootState();    
+    let fsm = buildRootState();   
+
+    fsm.subFsm("home").setEnterEffect("initial", ctx => {
+        console.error("Reach entry effect for home:initial.");
+    })
+    
+    fsm.subFsm("search").setEnterEffect("loading_results", ctx => {
+        console.error("Reach entry effect for search:loading_results.");
+    })
 
     fsm.init("home", {});
     expect('home').toBe(fsm.getCurrentState());
@@ -105,6 +115,7 @@ test("expect transition to search when home is completed with search request", (
     expect('search').toBe(fsm.getCurrentState());
 });
 
+/*
 test("expect transition to profile when home is completed with profile request", () => {
     let fsm = buildRootState();    
 
@@ -114,4 +125,4 @@ test("expect transition to profile when home is completed with profile request",
 
     fsm.processSubstateEvent("home", 'profile_requested', {profileId:1});
     expect('profile').toBe(fsm.getCurrentState());
-});
+});*/

@@ -27,7 +27,7 @@ States
 
 This is an example where only the states matter, and there’s no extra data to keep track of.
 
-![alt text](image-4.png)
+![alt text](images/image-4.png)
 
 
 ### Example: Hair Dryer — Three States, Single Context
@@ -37,7 +37,7 @@ Imagine a hair dryer with a single button that cycles through:
 - LOW → low heat / low speed
 - HIGH → high heat / high speed
 
-![alt text](image-3.png)
+![alt text](images/image-3.png)
 
 
 

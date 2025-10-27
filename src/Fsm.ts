@@ -239,6 +239,8 @@ export class Fsm<T extends RootManifest> {
                 console.debug("New state details after choice: ", newStateDetails);
                 this.logStateTransition(this.currentStateDetails, new LittleEvent(), newStateDetails);  
                 this.currentStateDetails = newStateDetails;
+
+                this.executeOnEnterEffect(this.currentStateDetails);
             }
         }
     }

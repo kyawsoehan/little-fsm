@@ -29,7 +29,10 @@ function buildRootState(): Fsm<RootFsmScheme> {
 test("expect in when initiated", () => {
 
     let fsm = buildRootState();
-    
+    fsm.setEntryEffect('out', ctx => {
+        console.log("Handle entry effect for out");
+    })
+
     fsm.init('in', {});
     expect('in').toBe(fsm.getCurrentState());
 

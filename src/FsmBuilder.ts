@@ -6,7 +6,7 @@ interface EventToTargetStateDef<SM extends RootManifest['states'], EM extends Ro
 }
 
 interface ConditionToTargetStateDef<SM extends RootManifest['states'], CSC> {
-    transition<NS extends keyof SM>(cond:(currentContext:CSC) => boolean, nextState:NS, fun:(currentStateContext:CSC) => SM[NS]['context']) : ConditionToTargetStateDef<SM, CSC>
+    transition<NS extends keyof SM>(cond:(currentContext:CSC) => boolean, nextState:NS, fun:(currentStateContext:CSC) => SM[NS]['context'], description?:string) : ConditionToTargetStateDef<SM, CSC>
 }
 
 interface FinalSubStateToTargetStateDef<SM extends RootManifest['states'], SSA extends StateManifest['substates'], CSC> {
@@ -81,12 +81,13 @@ export class FsmBuilder<T extends RootManifest> {
         
         let objWithWhen:ConditionToTargetStateDef<T['states'], CC> = {
 
-            transition<N extends keyof T['states']>(cond:(currentContext:CC) => boolean, nextStateName:N, fun:(currentContext:CC) => T['states'][N]['context']) {
+            transition<N extends keyof T['states']>(cond:(currentContext:CC) => boolean, nextStateName:N, fun:(currentContext:CC) => T['states'][N]['context'], description?:string) {
                 
                 let choiceCondition: ChoiceCondition = {
                     targetState: nextStateName as string,
                     condition: cond,
-                    changeContext: fun
+                    changeContext: fun,
+                    description: description
                 }
                 
                 if(!choiceStateToConditionsMap.has(currState as string)) {

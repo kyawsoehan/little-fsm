@@ -84,12 +84,12 @@ function buildRootState(): Fsm<RootFsmScheme> {
             return {
                 searchCriteria: c.searchCriteria!
             };
-        })
+        }, "if searched")
         .transition(c => c.profileId != null, 'profile', (c) => {
             return {
                 profileId: c.profileId!
             };
-        })
+        }, "if profile")
 
 
     return builder.build();

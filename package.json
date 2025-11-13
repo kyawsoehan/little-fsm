@@ -1,6 +1,6 @@
 {
   "name": "little-fsm",
-  "version": "0.1.10",
+  "version": "0.1.13",
   "description": "A strongly-typed lightweight state machine library.",
   "type": "module",
   "files": [

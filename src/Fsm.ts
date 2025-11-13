@@ -129,7 +129,8 @@ export interface CompositeStateIOConfig {
 export interface ChoiceCondition {
   targetState: string;
   condition: (ctx: any) => boolean;
-  changeContext: (ctx:any) => any
+  changeContext: (ctx:any) => any;
+  description?: string;
 }
 
 export class Fsm<T extends RootManifest> {
@@ -149,7 +150,8 @@ export class Fsm<T extends RootManifest> {
     internals() {
         return {
             stateToEventFunctionMap: this.stateToEventFunctionMap,
-            compositeStateIOMap: this.compositeStateIOMap
+            compositeStateIOMap: this.compositeStateIOMap,
+            choiceStateToConditionsMap: this.choiceStateToConditionsMap
         }
     }
 
